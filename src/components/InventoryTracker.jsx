@@ -114,7 +114,7 @@ export default function InventoryTracker() {
                     <div style={{ fontWeight: 500 }}>{row.name}</div>
                   </td>
                   <td style={{ color: '#78716c' }}>{row.supplier || '—'}</td>
-                  <td>${row.cost.toFixed(4)}</td>
+                  <td>${row.cost.toFixed(2)}</td>
                   <td>
                     <InlineQty
                       value={row.startQty}

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import ProductBuilder from './components/ProductBuilder'
 import InventoryTracker from './components/InventoryTracker'
 import PLDashboard from './components/PLDashboard'
+import MaterialCosts from './components/MaterialCosts'
 
-const TABS = ['Product Builder', 'Inventory', 'P&L Dashboard']
+const TABS = ['Product Builder', 'Inventory', 'Material Costs', 'P&L Dashboard']
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(0)
@@ -29,7 +30,8 @@ export default function App() {
       <main className="main">
         {activeTab === 0 && <ProductBuilder />}
         {activeTab === 1 && <InventoryTracker />}
-        {activeTab === 2 && <PLDashboard />}
+        {activeTab === 2 && <MaterialCosts />}
+        {activeTab === 3 && <PLDashboard />}
       </main>
     </div>
   )

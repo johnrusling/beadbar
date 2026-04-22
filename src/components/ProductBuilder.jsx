@@ -226,7 +226,7 @@ export default function ProductBuilder() {
                     <option value="">Select material…</option>
                     {materials.map(m => (
                       <option key={m.id} value={m.name}>
-                        {m.name} (${m.cost.toFixed(4)})
+                        {m.name} (${m.cost.toFixed(2)})
                       </option>
                     ))}
                   </select>
