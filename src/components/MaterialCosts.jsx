@@ -5,7 +5,6 @@ const emptyForm = () => ({ name: '', type: '', size: '', cost: '', supplier: '',
 
 export default function MaterialCosts() {
   const [materials, setMaterials] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm())
@@ -96,15 +95,14 @@ export default function MaterialCosts() {
                 <th>Cost / Unit</th>
                 <th>Supplier</th>
                 <th>Notes</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               {materials.map(m => (
                 <tr
                   key={m.id}
-                  className={`row-tappable${selectedId === m.id ? ' row-selected' : ''}`}
-                  onClick={() => setSelectedId(selectedId === m.id ? null : m.id)}
+                  className="row-tappable"
+                  onClick={() => openEdit(m)}
                 >
                   <td style={{ fontWeight: 500 }}>{m.name}</td>
                   <td style={{ color: '#78716c' }}>{m.type || '—'}</td>
@@ -112,25 +110,11 @@ export default function MaterialCosts() {
                   <td>${Number(m.cost).toFixed(2)}</td>
                   <td style={{ color: '#78716c' }}>{m.supplier || '—'}</td>
                   <td style={{ color: '#78716c', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.notes || '—'}</td>
-                  <td style={{ minWidth: 120 }}>
-                    {selectedId === m.id && (
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); openEdit(m) }}>Edit</button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          disabled={deleting === m.id}
-                          onClick={e => { e.stopPropagation(); deleteMaterial(m) }}
-                        >
-                          {deleting === m.id ? '…' : 'Delete'}
-                        </button>
-                      </div>
-                    )}
-                  </td>
                 </tr>
               ))}
               {materials.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="empty-state">No materials yet. Add one to get started.</td>
+                  <td colSpan={6} className="empty-state">No materials yet. Add one to get started.</td>
                 </tr>
               )}
             </tbody>
@@ -176,6 +160,15 @@ export default function MaterialCosts() {
             </div>
 
             <div className="form-actions">
+              {editingId && (
+                <button
+                  className="btn btn-danger"
+                  disabled={deleting === editingId}
+                  onClick={() => { deleteMaterial({ id: editingId, name: form.name }); closeForm() }}
+                >
+                  {deleting === editingId ? '…' : 'Delete'}
+                </button>
+              )}
               <button className="btn btn-secondary" onClick={closeForm}>Cancel</button>
               <button className="btn btn-primary" disabled={saving || !form.name.trim() || !form.cost} onClick={save}>
                 {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Material'}

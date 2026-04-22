@@ -8,7 +8,6 @@ const emptyForm = () => ({ name: '', materials: [emptyRow()], packaging_cost: ''
 export default function ProductBuilder() {
   const [products, setProducts] = useState([])
   const [materials, setMaterials] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm())
@@ -139,8 +138,8 @@ export default function ProductBuilder() {
             return (
               <div
                 key={p.id}
-                className={`product-card${selectedId === p.id ? ' selected' : ''}`}
-                onClick={() => setSelectedId(selectedId === p.id ? null : p.id)}
+                className="product-card"
+                onClick={() => openEdit(p)}
               >
                 <div className="product-card-info">
                   <div className="product-name">{p.name}</div>
@@ -169,13 +168,6 @@ export default function ProductBuilder() {
                   <div style={{ fontSize: 17, fontWeight: 700, marginTop: 2 }}>${p.price.toFixed(2)}</div>
                   <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>+${prof.toFixed(2)}</div>
                 </div>
-
-                {selectedId === p.id && (
-                  <div className="product-card-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); openEdit(p) }}>Edit</button>
-                    <button className="btn btn-danger btn-sm" onClick={e => { e.stopPropagation(); del(p.id) }}>Delete</button>
-                  </div>
-                )}
               </div>
             )
           })}
@@ -286,6 +278,9 @@ export default function ProductBuilder() {
             </div>
 
             <div className="form-actions">
+              {editingId && (
+                <button className="btn btn-danger" onClick={() => { del(editingId); closeForm() }}>Delete</button>
+              )}
               <button className="btn btn-secondary" onClick={closeForm}>Cancel</button>
               <button
                 className="btn btn-primary"
