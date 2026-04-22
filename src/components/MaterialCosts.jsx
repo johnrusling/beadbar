@@ -5,6 +5,7 @@ const emptyForm = () => ({ name: '', type: '', size: '', cost: '', supplier: '',
 
 export default function MaterialCosts() {
   const [materials, setMaterials] = useState([])
+  const [selectedId, setSelectedId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm())
@@ -100,24 +101,30 @@ export default function MaterialCosts() {
             </thead>
             <tbody>
               {materials.map(m => (
-                <tr key={m.id}>
+                <tr
+                  key={m.id}
+                  className={`row-tappable${selectedId === m.id ? ' row-selected' : ''}`}
+                  onClick={() => setSelectedId(selectedId === m.id ? null : m.id)}
+                >
                   <td style={{ fontWeight: 500 }}>{m.name}</td>
                   <td style={{ color: '#78716c' }}>{m.type || '—'}</td>
                   <td style={{ color: '#78716c' }}>{m.size || '—'}</td>
                   <td>${Number(m.cost).toFixed(2)}</td>
                   <td style={{ color: '#78716c' }}>{m.supplier || '—'}</td>
                   <td style={{ color: '#78716c', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.notes || '—'}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(m)}>Edit</button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        disabled={deleting === m.id}
-                        onClick={() => deleteMaterial(m)}
-                      >
-                        {deleting === m.id ? '…' : 'Delete'}
-                      </button>
-                    </div>
+                  <td style={{ minWidth: 120 }}>
+                    {selectedId === m.id && (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); openEdit(m) }}>Edit</button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          disabled={deleting === m.id}
+                          onClick={e => { e.stopPropagation(); deleteMaterial(m) }}
+                        >
+                          {deleting === m.id ? '…' : 'Delete'}
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

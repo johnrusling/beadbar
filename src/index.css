@@ -175,6 +175,8 @@ td {
 
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #fafaf9; }
+tr.row-selected td { background: #fef7ed; }
+tr.row-tappable { cursor: pointer; }
 
 /* ── Badges ──────────────────────────────────────────────── */
 
@@ -401,7 +403,10 @@ tr:hover td { background: #fafaf9; }
   border: 1px solid #e7e5e4;
   border-radius: 10px;
   padding: 16px 20px;
+  cursor: pointer;
 }
+
+.product-card.selected { background: #fef7ed; border-color: #e7c99a; }
 
 .product-card-info { flex: 1; min-width: 0; }
 .product-name { font-size: 14px; font-weight: 600; color: #1c1917; }

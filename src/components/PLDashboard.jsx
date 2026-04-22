@@ -8,6 +8,7 @@ export default function PLDashboard() {
   const [selProduct, setSelProduct] = useState('')
   const [units, setUnits] = useState('')
   const [logging, setLogging] = useState(false)
+  const [selectedSaleId, setSelectedSaleId] = useState(null)
 
   useEffect(() => { load() }, [])
 
@@ -229,7 +230,11 @@ export default function PLDashboard() {
               </thead>
               <tbody>
                 {sales.map(s => (
-                  <tr key={s.id}>
+                  <tr
+                    key={s.id}
+                    className={`row-tappable${selectedSaleId === s.id ? ' row-selected' : ''}`}
+                    onClick={() => setSelectedSaleId(selectedSaleId === s.id ? null : s.id)}
+                  >
                     <td style={{ color: '#78716c', whiteSpace: 'nowrap' }}>
                       {new Date(s.sold_at).toLocaleDateString('en-US', {
                         month: 'short', day: 'numeric', year: 'numeric',
@@ -243,10 +248,15 @@ export default function PLDashboard() {
                     <td style={{ color: '#16a34a', fontWeight: 600 }}>
                       ${(Number(s.profit_per_unit) * s.units).toFixed(2)}
                     </td>
-                    <td>
-                      <button className="btn btn-danger btn-sm" onClick={() => deleteSale(s.id)}>
-                        Delete
-                      </button>
+                    <td style={{ minWidth: 80 }}>
+                      {selectedSaleId === s.id && (
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={e => { e.stopPropagation(); deleteSale(s.id) }}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
