@@ -14,7 +14,7 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="header-inner">
-          <img src="/logo.png" alt="Bead Bar" className="app-logo" />
+          <img src="/logo.svg" alt="Bead Bar" className="app-logo" />
           <nav className="tab-nav">
             {TABS.map((tab, i) => (
               <button
