@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../supabase'
 
 const MAX_MATS = 8
 const emptyRow = () => ({ mat: '', qty: '' })
-const emptyForm = () => ({ name: '', materials: [emptyRow()], packaging_cost: '', price: '', notes: '' })
+const emptyForm = () => ({ name: '', materials: [emptyRow()], packaging_cost: '', price: '', notes: '', photo_url: '' })
 
 export default function ProductBuilder() {
   const [products, setProducts] = useState([])
@@ -12,6 +12,8 @@ export default function ProductBuilder() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm())
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef()
 
   useEffect(() => { load() }, [])
 
@@ -56,6 +58,7 @@ export default function ProductBuilder() {
       packaging_cost: p.packaging_cost ? String(p.packaging_cost) : '',
       price: String(p.price),
       notes: p.notes || '',
+      photo_url: p.photo_url || '',
     })
     setEditingId(p.id)
     setShowForm(true)
@@ -85,6 +88,17 @@ export default function ProductBuilder() {
     })
   }
 
+  async function uploadPhoto(file) {
+    setUploading(true)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('product-photos').upload(path, file)
+    if (error) { alert('Photo upload failed: ' + error.message); setUploading(false); return }
+    const { data } = supabase.storage.from('product-photos').getPublicUrl(path)
+    setField('photo_url', data.publicUrl)
+    setUploading(false)
+  }
+
   async function save() {
     if (!form.name.trim() || !form.price) return
     setSaving(true)
@@ -96,6 +110,7 @@ export default function ProductBuilder() {
       packaging_cost: parseFloat(form.packaging_cost) || 0,
       price: parseFloat(form.price),
       notes: form.notes.trim(),
+      photo_url: form.photo_url || null,
     }
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId)
@@ -120,11 +135,86 @@ export default function ProductBuilder() {
     }, 0) + (p.packaging_cost || 0)
   }
 
+  async function exportEtsy() {
+    const [{ data: inv }, { data: sls }] = await Promise.all([
+      supabase.from('inventory').select('*'),
+      supabase.from('sales').select('*'),
+    ])
+
+    const usedMap = {}
+    ;(sls || []).forEach(sale => {
+      const prod = products.find(p => p.name === sale.product_name)
+      if (!prod) return
+      ;(prod.materials || []).forEach(m => {
+        usedMap[m.mat] = (usedMap[m.mat] || 0) + m.qty * sale.units
+      })
+    })
+
+    const remainingMap = {}
+    ;(inv || []).forEach(i => {
+      remainingMap[i.material_name] = Math.max(0, (Number(i.starting_qty) || 0) - (usedMap[i.material_name] || 0))
+    })
+
+    const rows = products.map(p => {
+      const mats = (p.materials || []).filter(m => m.mat && m.qty)
+      let canMake = mats.length ? 999 : 0
+      mats.forEach(m => {
+        const possible = Math.floor((remainingMap[m.mat] ?? 0) / m.qty)
+        canMake = Math.min(canMake, possible)
+      })
+
+      const matNames = mats.map(m => m.mat).slice(0, 13).join(',')
+      const desc = [
+        'Handmade beaded jewelry.',
+        mats.length ? `\nMaterials: ${mats.map(m => `${m.mat} ×${m.qty}`).join(', ')}.` : '',
+        p.notes ? `\n\n${p.notes}` : '',
+      ].join('')
+
+      return {
+        TITLE: p.name,
+        DESCRIPTION: desc,
+        PRICE: Number(p.price).toFixed(2),
+        QUANTITY: Math.max(0, canMake),
+        SKU: '',
+        TAGS: 'handmade jewelry,beaded jewelry,handmade,jewelry,beads,BLB jewelry',
+        MATERIALS: matNames,
+        WHO_MADE: 'i_did',
+        IS_SUPPLY: 'false',
+        WHEN_MADE: 'made_to_order',
+        TYPE: 'physical',
+        SHOULD_AUTO_RENEW: 'true',
+        SHOP_SECTION_TITLE: '',
+        IMAGE1: p.photo_url || '',
+      }
+    })
+
+    const headers = Object.keys(rows[0])
+    const csv = [
+      headers.join(','),
+      ...rows.map(row =>
+        headers.map(h => `"${String(row[h]).replace(/"/g, '""')}"`).join(',')
+      ),
+    ].join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `beadbar-etsy-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div>
       <div className="section-header" style={{ marginBottom: 20 }}>
         <h2 className="section-title">Products ({products.length})</h2>
-        <button className="btn btn-primary" onClick={openAdd}>+ Add Product</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {products.length > 0 && (
+            <button className="btn btn-secondary" onClick={exportEtsy}>Export for Etsy</button>
+          )}
+          <button className="btn btn-primary" onClick={openAdd}>+ Add Product</button>
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -141,6 +231,10 @@ export default function ProductBuilder() {
                 className="product-card"
                 onClick={() => openEdit(p)}
               >
+                {p.photo_url && (
+                  <img src={p.photo_url} alt={p.name} className="product-photo" />
+                )}
+
                 <div className="product-card-info">
                   <div className="product-name">{p.name}</div>
                   <div className="product-sub">
@@ -277,6 +371,39 @@ export default function ProductBuilder() {
               />
             </div>
 
+            <div className="form-group">
+              <label>Product Photo</label>
+              <div className="photo-upload-row">
+                {form.photo_url && (
+                  <img src={form.photo_url} alt="Product" className="photo-preview" />
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => fileRef.current.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Uploading…' : form.photo_url ? 'Change Photo' : 'Add Photo'}
+                  </button>
+                  {form.photo_url && (
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => setField('photo_url', '')}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => { if (e.target.files[0]) uploadPhoto(e.target.files[0]) }}
+                />
+              </div>
+            </div>
+
             <div className="form-actions">
               {editingId && (
                 <button className="btn btn-danger" onClick={() => { del(editingId); closeForm() }}>Delete</button>
@@ -285,7 +412,7 @@ export default function ProductBuilder() {
               <button
                 className="btn btn-primary"
                 onClick={save}
-                disabled={saving || !form.name.trim() || !form.price}
+                disabled={saving || uploading || !form.name.trim() || !form.price}
               >
                 {saving ? 'Saving…' : 'Save Product'}
               </button>

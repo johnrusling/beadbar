@@ -408,6 +408,30 @@ tr.row-tappable { cursor: pointer; }
 
 .product-card.selected { background: #fef7ed; border-color: #e7c99a; }
 
+.product-photo {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #e7e5e4;
+}
+
+.photo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.photo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e7e5e4;
+  flex-shrink: 0;
+}
+
 .product-card-info { flex: 1; min-width: 0; }
 .product-name { font-size: 14px; font-weight: 600; color: #1c1917; }
 .product-sub { font-size: 12px; color: #a8a29e; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
