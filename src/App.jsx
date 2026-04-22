@@ -4,7 +4,7 @@ import InventoryTracker from './components/InventoryTracker'
 import PLDashboard from './components/PLDashboard'
 import MaterialCosts from './components/MaterialCosts'
 
-const TABS = ['Product Builder', 'Inventory', 'Material Costs', 'P&L Dashboard']
+const TABS = ['Material Costs', 'Product Builder', 'Inventory', 'P&L Dashboard']
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(0)
@@ -28,9 +28,9 @@ export default function App() {
         </div>
       </header>
       <main className="main">
-        {activeTab === 0 && <ProductBuilder />}
-        {activeTab === 1 && <InventoryTracker />}
-        {activeTab === 2 && <MaterialCosts />}
+        {activeTab === 0 && <MaterialCosts />}
+        {activeTab === 1 && <ProductBuilder />}
+        {activeTab === 2 && <InventoryTracker />}
         {activeTab === 3 && <PLDashboard />}
       </main>
     </div>
