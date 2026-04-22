@@ -424,6 +424,19 @@ tr.row-tappable { cursor: pointer; }
   align-items: end;
 }
 
+/* ── Time tracker log row ───────────────────────────────── */
+
+.time-log-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 140px 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+@media (max-width: 680px) {
+  .time-log-row { grid-template-columns: 1fr; }
+}
+
 /* ── Empty state ────────────────────────────────────────── */
 
 .empty-state {
