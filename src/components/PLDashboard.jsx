@@ -5,8 +5,7 @@ export default function PLDashboard() {
   const [sales, setSales] = useState([])
   const [products, setProducts] = useState([])
   const [materials, setMaterials] = useState([])
-  const [selProduct, setSelProduct] = useState('')
-  const [units, setUnits] = useState('')
+  const [pending, setPending] = useState({})   // { productId: count }
   const [logging, setLogging] = useState(false)
 
   useEffect(() => { load() }, [])
@@ -35,28 +34,49 @@ export default function PLDashboard() {
     }, 0) + (p.packaging_cost || 0)
   }
 
-  const selectedProduct = products.find(p => p.name === selProduct)
-  const previewCost = selectedProduct ? productCost(selectedProduct) : 0
-  const previewProfit = selectedProduct ? selectedProduct.price - previewCost : 0
-  const unitsNum = parseInt(units) || 0
+  function tap(p) {
+    setPending(prev => ({ ...prev, [p.id]: (prev[p.id] || 0) + 1 }))
+  }
 
-  async function logSale() {
-    if (!selProduct || !units || !selectedProduct) return
-    setLogging(true)
-    const cost_per_unit = productCost(selectedProduct)
-    const price_per_unit = selectedProduct.price
-    const profit_per_unit = price_per_unit - cost_per_unit
-    await supabase.from('sales').insert({
-      product_name: selProduct,
-      units: parseInt(units),
-      price_per_unit,
-      cost_per_unit,
-      profit_per_unit,
-      sold_at: new Date().toISOString(),
+  function decrement(e, p) {
+    e.stopPropagation()
+    setPending(prev => {
+      const next = { ...prev }
+      if ((next[p.id] || 0) <= 1) delete next[p.id]
+      else next[p.id]--
+      return next
     })
+  }
+
+  const totalPendingUnits = Object.values(pending).reduce((s, n) => s + n, 0)
+  const totalPendingRevenue = useMemo(() => {
+    return Object.entries(pending).reduce((s, [id, count]) => {
+      const p = products.find(p => p.id === id)
+      return s + (p ? Number(p.price) * count : 0)
+    }, 0)
+  }, [pending, products])
+
+  async function logPending() {
+    if (!totalPendingUnits) return
+    setLogging(true)
+    const inserts = []
+    for (const [id, units] of Object.entries(pending)) {
+      if (!units) continue
+      const p = products.find(p => p.id === id)
+      if (!p) continue
+      const cost_per_unit = productCost(p)
+      inserts.push({
+        product_name: p.name,
+        units,
+        price_per_unit: Number(p.price),
+        cost_per_unit,
+        profit_per_unit: Number(p.price) - cost_per_unit,
+        sold_at: new Date().toISOString(),
+      })
+    }
+    await supabase.from('sales').insert(inserts)
+    setPending({})
     await load()
-    setSelProduct('')
-    setUnits('')
     setLogging(false)
   }
 
@@ -90,49 +110,36 @@ export default function PLDashboard() {
   }, [sales])
 
   return (
-    <div>
-      {/* Log Sale */}
+    <div style={{ paddingBottom: totalPendingUnits ? 88 : 0 }}>
+
+      {/* Sale Grid */}
       <div className="card" style={{ marginBottom: 22 }}>
         <div className="section-header" style={{ marginBottom: 16 }}>
           <h2 className="section-title">Log a Sale</h2>
+          <span style={{ fontSize: 12, color: '#a8a29e' }}>Tap to add · − to remove</span>
         </div>
-        <div className="sale-row">
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Product</label>
-            <select value={selProduct} onChange={e => setSelProduct(e.target.value)}>
-              <option value="">Select product…</option>
-              {products.map(p => (
-                <option key={p.id} value={p.name}>{p.name} — ${p.price.toFixed(2)}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Units</label>
-            <input
-              type="number"
-              min="1"
-              value={units}
-              onChange={e => setUnits(e.target.value)}
-              placeholder="1"
-            />
-          </div>
-          <button
-            className="btn btn-primary"
-            onClick={logSale}
-            disabled={!selProduct || !units || logging}
-            style={{ alignSelf: 'flex-end' }}
-          >
-            {logging ? 'Logging…' : 'Log Sale'}
-          </button>
-        </div>
-
-        {selectedProduct && (
-          <div style={{ marginTop: 10, fontSize: 12, color: '#78716c', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            <span>Cost/unit: <strong>${previewCost.toFixed(2)}</strong></span>
-            <span>Profit/unit: <strong style={{ color: '#16a34a' }}>${previewProfit.toFixed(2)}</strong></span>
-            {unitsNum > 0 && (
-              <span>Total profit: <strong style={{ color: '#16a34a' }}>${(previewProfit * unitsNum).toFixed(2)}</strong></span>
-            )}
+        {products.length === 0 ? (
+          <div className="empty-state" style={{ padding: '32px 0' }}>No products yet — add some in Product Builder.</div>
+        ) : (
+          <div className="sale-grid">
+            {products.map(p => {
+              const count = pending[p.id] || 0
+              return (
+                <div key={p.id} className={`sale-tile${count > 0 ? ' sale-tile-active' : ''}`} onClick={() => tap(p)}>
+                  {p.photo_url
+                    ? <img src={p.photo_url} alt={p.name} className="sale-tile-img" />
+                    : <div className="sale-tile-name">{p.name}</div>
+                  }
+                  <div className="sale-tile-price">${Number(p.price).toFixed(2)}</div>
+                  {count > 0 && (
+                    <>
+                      <div className="sale-badge">{count}</div>
+                      <button className="sale-minus" onClick={e => decrement(e, p)}>−</button>
+                    </>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -190,10 +197,7 @@ export default function PLDashboard() {
                       <td>
                         <div className="margin-bar-wrap">
                           <div className="margin-bar">
-                            <div
-                              className="margin-bar-fill"
-                              style={{ width: `${Math.min(100, Math.max(0, marg))}%` }}
-                            />
+                            <div className="margin-bar-fill" style={{ width: `${Math.min(100, Math.max(0, marg))}%` }} />
                           </div>
                           <span className="margin-pct">{marg.toFixed(0)}%</span>
                         </div>
@@ -211,7 +215,7 @@ export default function PLDashboard() {
       <div className="card">
         <h2 className="section-title" style={{ marginBottom: 16 }}>Sales Log</h2>
         {sales.length === 0 ? (
-          <div className="empty-state">No sales logged yet. Log your first sale above.</div>
+          <div className="empty-state">No sales logged yet.</div>
         ) : (
           <div className="table-wrap">
             <table>
@@ -228,15 +232,9 @@ export default function PLDashboard() {
               </thead>
               <tbody>
                 {sales.map(s => (
-                  <tr
-                    key={s.id}
-                    className="row-tappable"
-                    onClick={() => deleteSale(s.id)}
-                  >
+                  <tr key={s.id} className="row-tappable" onClick={() => deleteSale(s.id)}>
                     <td style={{ color: '#78716c', whiteSpace: 'nowrap' }}>
-                      {new Date(s.sold_at).toLocaleDateString('en-US', {
-                        month: 'short', day: 'numeric', year: 'numeric',
-                      })}
+                      {new Date(s.sold_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td style={{ fontWeight: 500 }}>{s.product_name}</td>
                     <td>{s.units}</td>
@@ -253,6 +251,19 @@ export default function PLDashboard() {
           </div>
         )}
       </div>
+
+      {/* Sticky log bar */}
+      {totalPendingUnits > 0 && (
+        <div className="sale-log-bar">
+          <div style={{ fontSize: 13, color: '#fff' }}>
+            <strong>{totalPendingUnits} item{totalPendingUnits !== 1 ? 's' : ''}</strong>
+            <span style={{ opacity: 0.75, marginLeft: 8 }}>· ${totalPendingRevenue.toFixed(2)}</span>
+          </div>
+          <button className="btn sale-log-btn" onClick={logPending} disabled={logging}>
+            {logging ? 'Saving…' : 'Log Sales'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
