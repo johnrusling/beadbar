@@ -40,11 +40,16 @@ CREATE TABLE IF NOT EXISTS sales (
   sold_at timestamptz DEFAULT now()
 );
 
--- Disable RLS (personal app — re-enable and add policies if you add auth later)
-ALTER TABLE materials DISABLE ROW LEVEL SECURITY;
-ALTER TABLE products DISABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory DISABLE ROW LEVEL SECURITY;
-ALTER TABLE sales DISABLE ROW LEVEL SECURITY;
+-- RLS: only authenticated users can read/write all tables
+ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "auth_all_materials"  ON materials  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_products"   ON products   FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_inventory"  ON inventory  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_sales"      ON sales      FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- Seed: Materials from Gem Packed
