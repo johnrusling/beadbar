@@ -5,3 +5,7 @@ dist
 .DS_Store
 
 .vercel
+.claude/
+supabase/.claude/
+supabase/.temp/
+PNG image.JPEG
