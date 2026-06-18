@@ -2,6 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../supabase'
 
 const LOW_INCHES = 12 // remaining-length warning threshold
+const METAL_OPTIONS = [
+  '14k Gold Filled', 'Rose Gold Filled', 'White Gold Filled',
+  '14k Solid Gold', '10k Solid Gold', 'Sterling Silver', 'Stainless Steel', 'Titanium',
+]
 const today = () => new Date().toISOString().slice(0, 10)
 const fmtLen = n => (n % 1 === 0 ? n : Number(n).toFixed(1))
 
@@ -47,6 +51,10 @@ export default function PermanentJewelry() {
 
   const chainById = useMemo(() => Object.fromEntries(chains.map(c => [c.id, c])), [chains])
   const vendorOptions = useMemo(() => [...new Set(chains.map(c => c.vendor).filter(Boolean))].sort(), [chains])
+  const metalOptions = useMemo(() => {
+    const used = chains.map(c => c.metal).filter(Boolean)
+    return [...new Set([...METAL_OPTIONS, ...used])]
+  }, [chains])
 
   // remaining inches per chain = acquired (purchases) − used (pj sales)
   const usage = useMemo(() => {
@@ -440,7 +448,10 @@ export default function PermanentJewelry() {
               </div>
               <div className="form-group">
                 <label>Metal</label>
-                <input value={chainForm.metal} onChange={e => set(setChainForm, 'metal', e.target.value)} placeholder="e.g. 14k Gold Filled" />
+                <input list="pj-metal-options" value={chainForm.metal} onChange={e => set(setChainForm, 'metal', e.target.value)} placeholder="Select or type new" />
+                <datalist id="pj-metal-options">
+                  {metalOptions.map(m => <option key={m} value={m} />)}
+                </datalist>
               </div>
             </div>
             <div className="form-row-2">
