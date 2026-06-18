@@ -205,7 +205,7 @@ export default function PermanentJewelry() {
   const set = (setter, field, value) => setter(f => ({ ...f, [field]: value }))
 
   return (
-    <div style={{ paddingBottom: pending.length ? 88 : 0 }}>
+    <div>
 
       {/* Source / event */}
       <div className="card" style={{ marginBottom: 22 }}>
@@ -292,6 +292,19 @@ export default function PermanentJewelry() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {pending.length > 0 && (
+              <div className="sell-summary">
+                <div className="sell-summary-totals">
+                  <strong>{pendingTotals.count} piece{pendingTotals.count !== 1 ? 's' : ''}</strong>
+                  <span> · ${pendingTotals.revenue.toFixed(2)}</span>
+                  <span> · profit ${pendingTotals.profit.toFixed(2)}</span>
+                </div>
+                <button className="btn btn-primary" onClick={logPending} disabled={logging}>
+                  {logging ? 'Saving…' : 'Log Sales'}
+                </button>
               </div>
             )}
           </>
@@ -416,18 +429,6 @@ export default function PermanentJewelry() {
           </div>
         )}
       </div>
-
-      {/* Sticky log bar */}
-      {pending.length > 0 && (
-        <div className="sale-log-bar">
-          <div style={{ fontSize: 13, color: '#fff' }}>
-            <strong>{pendingTotals.count} piece{pendingTotals.count !== 1 ? 's' : ''}</strong>
-            <span style={{ opacity: 0.75, marginLeft: 8 }}>· ${pendingTotals.revenue.toFixed(2)}</span>
-            <span style={{ opacity: 0.6, marginLeft: 8 }}>· profit ${pendingTotals.profit.toFixed(2)}</span>
-          </div>
-          <button className="btn sale-log-btn" onClick={logPending} disabled={logging}>{logging ? 'Saving…' : 'Log Sales'}</button>
-        </div>
-      )}
 
       {/* Add / edit chain modal */}
       {chainForm && (
