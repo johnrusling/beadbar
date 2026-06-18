@@ -46,6 +46,7 @@ export default function PermanentJewelry() {
   }
 
   const chainById = useMemo(() => Object.fromEntries(chains.map(c => [c.id, c])), [chains])
+  const vendorOptions = useMemo(() => [...new Set(chains.map(c => c.vendor).filter(Boolean))].sort(), [chains])
 
   // remaining inches per chain = acquired (purchases) − used (pj sales)
   const usage = useMemo(() => {
@@ -432,7 +433,10 @@ export default function PermanentJewelry() {
             <div className="form-row-2">
               <div className="form-group">
                 <label>Vendor</label>
-                <input value={chainForm.vendor} onChange={e => set(setChainForm, 'vendor', e.target.value)} placeholder="e.g. Gem Packed" />
+                <input list="pj-vendor-options" value={chainForm.vendor} onChange={e => set(setChainForm, 'vendor', e.target.value)} placeholder="Select or type new" />
+                <datalist id="pj-vendor-options">
+                  {vendorOptions.map(v => <option key={v} value={v} />)}
+                </datalist>
               </div>
               <div className="form-group">
                 <label>Metal</label>
