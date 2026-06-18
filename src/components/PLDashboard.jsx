@@ -356,7 +356,10 @@ export default function PLDashboard() {
                     <td>
                       <span className="source-tag">{s.source || 'General'}</span>
                     </td>
-                    <td style={{ fontWeight: 500 }}>{s.product_name}</td>
+                    <td style={{ fontWeight: 500 }}>
+                      {s.kind === 'pj' && <span className="source-tag" style={{ marginRight: 6, background: '#ede9fe', color: '#6d28d9' }}>PJ</span>}
+                      {s.product_name}
+                    </td>
                     <td>{s.units}</td>
                     <td>${Number(s.price_per_unit).toFixed(2)}</td>
                     <td style={{ color: '#16a34a' }}>${Number(s.profit_per_unit).toFixed(2)}</td>

@@ -3,12 +3,13 @@ import ProductBuilder from './components/ProductBuilder'
 import InventoryTracker from './components/InventoryTracker'
 import PLDashboard from './components/PLDashboard'
 import MaterialCosts from './components/MaterialCosts'
+import PermanentJewelry from './components/PermanentJewelry'
 import TimeTracker from './components/TimeTracker'
 import LoginScreen from './components/LoginScreen'
 import PasswordReset from './components/PasswordReset'
 import { supabase } from './supabase'
 
-const TABS = ['Material Costs', 'Product Builder', 'Inventory', 'Time Tracker', 'P&L Dashboard']
+const TABS = ['Material Costs', 'Product Builder', 'Inventory', 'Permanent Jewelry', 'Time Tracker', 'P&L Dashboard']
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(0)
@@ -57,8 +58,9 @@ export default function App() {
         {activeTab === 0 && <MaterialCosts />}
         {activeTab === 1 && <ProductBuilder />}
         {activeTab === 2 && <InventoryTracker />}
-        {activeTab === 3 && <TimeTracker />}
-        {activeTab === 4 && <PLDashboard />}
+        {activeTab === 3 && <PermanentJewelry />}
+        {activeTab === 4 && <TimeTracker />}
+        {activeTab === 5 && <PLDashboard />}
       </main>
     </div>
   )
