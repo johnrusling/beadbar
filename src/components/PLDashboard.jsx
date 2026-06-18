@@ -135,6 +135,7 @@ export default function PLDashboard() {
   const breakdown = useMemo(() => {
     const map = {}
     sales.forEach(x => {
+      if (x.kind === 'pj') return // permanent jewelry has its own breakdown below
       if (!map[x.product_name]) {
         map[x.product_name] = { name: x.product_name, units: 0, revenue: 0, cost: 0, profit: 0 }
       }
@@ -157,6 +158,45 @@ export default function PLDashboard() {
     })
     return Object.values(map).sort((a, b) => b.revenue - a.revenue)
   }, [sales])
+
+  const pjSales = useMemo(() => sales.filter(x => x.kind === 'pj'), [sales])
+
+  const pjMetrics = useMemo(() => {
+    const revenue = pjSales.reduce((s, x) => s + x.price_per_unit * x.units, 0)
+    const cost = pjSales.reduce((s, x) => s + x.cost_per_unit * x.units, 0)
+    const profit = pjSales.reduce((s, x) => s + x.profit_per_unit * x.units, 0)
+    const pieces = pjSales.reduce((s, x) => s + x.units, 0)
+    const inches = pjSales.reduce((s, x) => s + Number(x.length_in || 0), 0)
+    const margin = revenue > 0 ? (profit / revenue) * 100 : 0
+    return { revenue, cost, profit, pieces, inches, margin }
+  }, [pjSales])
+
+  const pjByType = useMemo(() => {
+    const map = {}
+    pjSales.forEach(x => {
+      const k = x.jewelry_type || 'Other'
+      if (!map[k]) map[k] = { name: k, units: 0, revenue: 0, cost: 0, profit: 0, inches: 0 }
+      map[k].units += x.units
+      map[k].revenue += x.price_per_unit * x.units
+      map[k].cost += x.cost_per_unit * x.units
+      map[k].profit += x.profit_per_unit * x.units
+      map[k].inches += Number(x.length_in || 0)
+    })
+    return Object.values(map).sort((a, b) => b.revenue - a.revenue)
+  }, [pjSales])
+
+  const pjByChain = useMemo(() => {
+    const map = {}
+    pjSales.forEach(x => {
+      const k = x.chain_name || '—'
+      if (!map[k]) map[k] = { name: k, units: 0, revenue: 0, profit: 0, inches: 0 }
+      map[k].units += x.units
+      map[k].revenue += x.price_per_unit * x.units
+      map[k].profit += x.profit_per_unit * x.units
+      map[k].inches += Number(x.length_in || 0)
+    })
+    return Object.values(map).sort((a, b) => b.revenue - a.revenue)
+  }, [pjSales])
 
   return (
     <div style={{ paddingBottom: totalPendingUnits ? 88 : 0 }}>
@@ -285,10 +325,10 @@ export default function PLDashboard() {
         </div>
       )}
 
-      {/* By Product */}
+      {/* By Product (Beads) */}
       {breakdown.length > 0 && (
         <div className="card" style={{ marginBottom: 22 }}>
-          <h2 className="section-title" style={{ marginBottom: 16 }}>By Product</h2>
+          <h2 className="section-title" style={{ marginBottom: 16 }}>By Product (Beads)</h2>
           <div className="table-wrap">
             <table>
               <thead>
@@ -322,6 +362,101 @@ export default function PLDashboard() {
                     </tr>
                   )
                 })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Jewelry breakdown */}
+      {pjSales.length > 0 && (
+        <div className="card" style={{ marginBottom: 22 }}>
+          <h2 className="section-title" style={{ marginBottom: 16 }}>Permanent Jewelry</h2>
+
+          <div className="metrics-row" style={{ marginBottom: 18 }}>
+            <div className="metric-card">
+              <div className="metric-label">Revenue</div>
+              <div className="metric-value">${pjMetrics.revenue.toFixed(2)}</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Cost</div>
+              <div className="metric-value">${pjMetrics.cost.toFixed(2)}</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Profit</div>
+              <div className="metric-value green">${pjMetrics.profit.toFixed(2)}</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Pieces</div>
+              <div className="metric-value">{pjMetrics.pieces}</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Avg Margin</div>
+              <div className="metric-value green">{pjMetrics.margin.toFixed(1)}%</div>
+            </div>
+          </div>
+
+          <div className="table-wrap" style={{ marginBottom: 18 }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Pieces</th>
+                  <th>Chain Used</th>
+                  <th>Revenue</th>
+                  <th>Cost</th>
+                  <th>Profit</th>
+                  <th>Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pjByType.map(row => {
+                  const marg = row.revenue > 0 ? (row.profit / row.revenue) * 100 : 0
+                  return (
+                    <tr key={row.name}>
+                      <td style={{ fontWeight: 500 }}>{row.name}</td>
+                      <td>{row.units}</td>
+                      <td style={{ color: '#78716c' }}>{row.inches % 1 === 0 ? row.inches : row.inches.toFixed(1)}″</td>
+                      <td>${row.revenue.toFixed(2)}</td>
+                      <td>${row.cost.toFixed(2)}</td>
+                      <td style={{ color: '#16a34a', fontWeight: 600 }}>${row.profit.toFixed(2)}</td>
+                      <td>
+                        <div className="margin-bar-wrap">
+                          <div className="margin-bar">
+                            <div className="margin-bar-fill" style={{ width: `${Math.min(100, Math.max(0, marg))}%` }} />
+                          </div>
+                          <span className="margin-pct">{marg.toFixed(0)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="section-title" style={{ fontSize: 14, marginBottom: 10, color: '#78716c' }}>By Chain</h3>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Chain</th>
+                  <th>Pieces</th>
+                  <th>Chain Used</th>
+                  <th>Revenue</th>
+                  <th>Profit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pjByChain.map(row => (
+                  <tr key={row.name}>
+                    <td style={{ fontWeight: 500 }}>{row.name}</td>
+                    <td>{row.units}</td>
+                    <td style={{ color: '#78716c' }}>{row.inches % 1 === 0 ? row.inches : row.inches.toFixed(1)}″</td>
+                    <td>${row.revenue.toFixed(2)}</td>
+                    <td style={{ color: '#16a34a', fontWeight: 600 }}>${row.profit.toFixed(2)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
